@@ -1,0 +1,109 @@
+drop sequence office_seq;
+create sequence office_seq
+start with 10001
+increment by 1;
+
+drop table DIM_offices;
+create table DIM_offices
+(office_key    number(5)   not null,  -- surrogate key
+ officeCode    varchar(10) not null,
+ city          varchar(50),
+ state         varchar(50),
+ country       varchar(50),
+ postalcode    varchar(15),
+ territory     varchar(10),
+primary key(office_key)
+);
+insert into DIM_offices 
+select office_seq.nextval, officeCode, city, state,
+       country, postalCode, territory
+from offices;
+
+drop sequence emp_seq;
+create sequence emp_seq
+start with 10001
+increment by 1;
+
+drop table DIM_employees;
+create table DIM_employees
+(employee_key    number(5)  not null,
+ employeeNumber  number(11) not null,
+ lastName        varchar(50),
+ officeCode      varchar(10),
+ jobtitle        varchar(50),
+ primary key(employee_key)
+);
+
+insert into DIM_employees
+select emp_seq.nextval,
+       employeeNumber, lastName, officeCode, jobtitle
+from employees;
+
+
+drop sequence customer_seq;
+create sequence customer_seq
+start with 1000001
+increment by 1;
+
+drop table DIM_customers;
+create table DIM_customers
+(customer_key     number not  null,
+ customerNumber   number(11)  not null,
+ customerName     varchar(50),
+ city             varchar(50),
+ state            varchar(50),
+ country          varchar(50),
+ staffNo          number(11),
+ creditLimit      number(9,2),
+ primary key(customer_key)
+);
+
+insert into DIM_customers
+select customer_seq.nextval,
+       customerNumber, customerName, city, state, country,
+       SALESREPEMPLOYEENUMBER, creditLimit
+from customers;
+
+drop sequence product_seq;
+create sequence product_seq
+start with 100001
+increment by 1;
+
+drop table DIM_products;
+create table DIM_products
+(product_key     number  not null,
+ productCode     varchar(15) not null,
+ productName     varchar(70),
+ productLine     varchar(50),
+ productScale    varchar(10),
+ productVendor   varchar(50),
+ buyPrice        number(7,2), 
+ MSRP            number(7,2),
+ primary key(product_key)
+);
+
+insert into DIM_products
+select product_seq.nextval,
+       productCode, productName, productLine,
+       productScale, productVendor, buyPrice, MSRP
+from products;
+
+-- Fact Table
+drop table sales_fact;
+
+create table SALES_FACT
+(date_key        number not null,
+ product_key     number not null,
+ customer_key    number not null,
+ office_key      number(5) not null,
+ employee_key    number(5) not null,
+ quantityOrdered number(4),
+ priceEach       number(7,2),
+ lineTotal       number(11,2),
+ orderNumber     number(11),
+ orderLineNumber number(3),
+primary key(date_key, product_key, customer_key,
+            office_key, employee_key, ordernumber)
+);
+
+

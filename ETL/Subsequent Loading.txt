@@ -1,0 +1,57 @@
+insert into DIM_menu
+select DIM_menu_seq.nextval,m.menuListId, UPPER(m.name), m.categoryID,UPPER(c.name),
+	m.timemealID,UPPER(t.timeSection),m.pricePerUnit,m.unitSold,m.restaurantid
+from menulist m, timemeal t, category c
+where m.categoryid = c.categoryid AND m.timemealid = t.timemealid AND m.menuListId > 14078;
+
+--------------------------------------------------------------------------------
+
+INSERT into DIM_Restaurants
+SELECT DIM_Restaurant_seq.nextval,
+       A.restaurantID,B.BranchID, UPPER(A.name),
+       UPPER(C.typeName), UPPER(B.city),
+       UPPER(B.state), B.postcode
+FROM Restaurant A, Branch B, RestaurantType C
+WHERE (A.restaurantID = B.restaurantID) AND
+      (A.restaurantTypeID = C.restaurantTypeID) AND B.BranchID>10540 ;
+
+----------------------------------------------------------------------------------Insert into DIM_USERS
+Select dim_users_seq.nextval,
+	usersID, upper(name), upper(gender), dob, postcode, upper(city) , upper(state)
+from users
+where usersID > 10900; 
+
+-------------------------------------------------------------------------------------
+Insert into DIM_riders
+Select dim_rider_seq.nextval,
+	riderID, upper(name),lateNO
+from rider
+where rider_id>10100; 
+------------------------------------------------------------------------------------
+Insert into DIM_Promotion
+Select dim_promotion_seq.nextval,
+	promotionId, upper(promotecode), discountrate
+from promotion
+where promotionId>10065; 
+-----------------------------------------------------------------------------------
+
+insert into Sales_Fact
+select d.date_key,m.menu_key, u.user_key, r.rider_key,e.restaurant_key,p.promotion_key,b.orderid,b.quantity,m.price_per_unit, (b.quantity*m.price_per_unit) AS line_total, (b.quantity*m.price_per_unit*(p.discount_rate/100)) AS discount_amount,
+		o.rating, o.orderdatetime
+from DIM_Date D
+     join temp_order o
+          on trunc(d.cal_date) = trunc(o.orderdatetime)
+     join orderdetails b
+          on b.orderid = o.orderid
+     join DIM_menu M
+          on M.menu_list_id = b.menulistid
+     join DIM_Users U
+          on U.user_id = o.usersid
+     join DIM_Riders R
+          on R.rider_id = o.riderid
+     join DIM_promotion P
+          on P.promotion_id = o.promotionid
+     join DIM_restaurants E
+          on E.rest_branchID = o.branchID;
+where trunc(o.orderdatetime) > 31-MAR-2021
+

@@ -1,0 +1,41 @@
+-- generate 10 years of date , e.g. 2011 to 2020
+drop sequence date_seq;
+create sequence date_seq
+start with 100001
+increment by 1;
+
+drop table DIM_Date;
+create table DIM_Date
+(Date_key             number    not null,-- surrogate key
+ cal_date             date      not null, -- every date of the date range
+ dayOfWeek            number(1), -- 1 to 7
+ dayNum_calMonth      number(2), -- 1 to 31
+ dayNum_calYear       number(3), -- 1 to 366
+ calWeek_endDate      date,
+ calWeek_numYear      number(2), -- 1 to 53 weeks
+ calMonth_name        varchar(9), -- JANUARY to DECEMBER
+ calMonth_numYear     number(2),  -- 01 to 12
+ cal_year_month       char(7),    -- 'YYYY-MM'
+ cal_quarter          char(2),    -- 'Q1' to 'Q4'
+ cal_Year             number(4),
+ holiday_ind          char(1),    -- 'Y' or 'N'
+ weekday_ind          char(1),    -- 'Y' or 'N'
+primary key(Date_key) 
+);
+
+create or replace procedure prc_Updt_Holiday(in_Date IN date) IS
+begin
+   update DIM_Date
+   set holiday_ind = 'Y'
+   where cal_date = in_Date;
+   if (SQL%NOTFOUND) then
+      dbms_output.put_line('No rows updated');
+   else
+      dbms_output.put_line('Data updated');
+   end if;
+exception
+   when OTHERS then
+      dbms_output.put_line('Database errors...');
+end;
+/
+exec prc_Updt_Holiday('31-DEC-21')
