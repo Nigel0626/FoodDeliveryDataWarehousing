@@ -1,0 +1,316 @@
+SQL> set linesize 125
+SQL> set pagesize 120
+SQL> 
+SQL> Create or Replace view T_Breakfast2020 AS
+  2  Select U.state as state,
+  3         sum(S.line_total) AS Total_Breakfast,
+  4         ROW_NUMBER() OVER(Order By sum(S.line_total) DESC)
+  5         Ranks
+  6  From sales_fact S,dim_menu M,dim_users U
+  7  Where S.menu_key = M.menu_key AND
+  8        M.time_section = 'BREAKFAST'
+  9        AND U.user_key=S.user_key
+ 10        AND extract(year from S.order_date) = 2020
+ 11  Group by u.state;
+
+View created.
+
+SQL> 
+SQL> Create or Replace view T_LUNCH2020 AS
+  2  Select U.state as state,
+  3         sum(S.line_total) AS Total_LUNCH,
+  4         ROW_NUMBER() OVER(Order By sum(S.line_total) DESC)
+  5         Ranks
+  6  From sales_fact S,dim_menu M,dim_users U
+  7  Where S.menu_key = M.menu_key
+  8        AND M.time_section = 'LUNCH'
+  9        AND U.user_key=S.user_key
+ 10        AND extract(year from S.order_date) = 2020
+ 11  Group by U.state;
+
+View created.
+
+SQL> 
+SQL> Create or Replace view T_DINNER2020 AS
+  2  Select U.state as state,
+  3         sum(S.line_total) AS Total_DINNER,
+  4         ROW_NUMBER() OVER(Order By sum(S.line_total) DESC)
+  5         Ranks
+  6  From sales_fact S,dim_menu M,dim_users U
+  7  Where S.menu_key = M.menu_key
+  8        AND M.time_section = 'DINNER'
+  9        AND U.user_key=S.user_key
+ 10        AND extract(year from S.order_date) = 2020
+ 11  Group by U.state;
+
+View created.
+
+SQL> 
+SQL> Create or Replace view T_LD2020 AS
+  2  Select U.state as state,
+  3         sum(S.line_total) AS Total_LUNCH_DINNER,
+  4         ROW_NUMBER() OVER(Order By sum(S.line_total) DESC)
+  5         Ranks
+  6  From sales_fact S,dim_menu M,dim_users U
+  7  Where S.menu_key = M.menu_key
+  8        AND M.time_section = 'LUNCH AND DINNER'
+  9        AND U.user_key=S.user_key
+ 10        AND extract(year from S.order_date) = 2020
+ 11  Group by U.state;
+
+View created.
+
+SQL> 
+SQL> Create or Replace view T_ALLDAY2020 AS
+  2  Select U.state as state,
+  3         sum(S.line_total) AS Total_ALL_DAY,
+  4         ROW_NUMBER() OVER(Order By sum(S.line_total) DESC)
+  5         Ranks
+  6  From sales_fact S,dim_menu M,dim_users U
+  7  Where S.menu_key = M.menu_key
+  8        AND M.time_section = 'ALL DAY'
+  9        AND U.user_key=s.user_key
+ 10        AND extract(year from S.order_date) = 2020
+ 11  Group by U.state;
+
+View created.
+
+SQL> 
+SQL> column ranks format 99
+SQL> column state format a20
+SQL> column Total_Breakfast format 9999999.99
+SQL> column Total_Lunch format 9999999.99
+SQL> column Total_Dinner format 9999999.99
+SQL> column Total_LUNCH_DINNER format 9999999.99
+SQL> column Total_All_Day format 9999999.99
+SQL> column Total_Breakfast format 9999999.99
+SQL> column Total format 9999999.99
+SQL> column Total_Breakfast HEADING 'Total|Breakfast'
+SQL> column Total_Lunch HEADING 'Total|Lunch'
+SQL> column Total_Dinner HEADING 'Total|Dinner'
+SQL> column Total_LUNCH_DINNER HEADING 'Total|Lunch|Dinner'
+SQL> column Total_ALL_DAY HEADING 'Total|All|Day'
+SQL> 
+SQL> 
+SQL> 
+SQL> TTITLE CENTER  'Rank of Each Time Meal Section Sales on each State'SKIP 1 -
+> CENTER ======================================================================== SKIP
+SQL> select B.state,Total_Breakfast,B.ranks,
+  2         Total_Lunch,L.ranks,
+  3         Total_Dinner,D.ranks,
+  4         Total_LUNCH_DINNER,LD.ranks,
+  5         Total_ALL_DAY,A.ranks,
+  6         (Total_Breakfast+Total_Lunch+Total_Dinner+Total_LUNCH_DINNER+Total_ALL_DAY) AS TOTAL
+  7  FROM T_Breakfast2020 B
+  8  join T_LUNCH2020 L
+  9     on B.state = L.state
+ 10  join T_DINNER2020 D
+ 11     on B.state = D.state
+ 12  join T_LD2020 LD
+ 13     on B.state = LD.state
+ 14  join T_ALLDAY2020 A
+ 15     on B.state = A.state
+ 16  order by total desc;
+
+                                      Rank of Each Time Meal Section Sales on each State
+                           ========================================================================
+                                                                                 Total             Total
+                           Total             Total             Total             Lunch               All
+STATE                  Breakfast RANKS       Lunch RANKS      Dinner RANKS      Dinner RANKS         Day RANKS       TOTAL
+-------------------- ----------- ----- ----------- ----- ----------- ----- ----------- ----- ----------- ----- -----------
+SELANGOR               206131.47     1    93462.78     1    59323.71     1   863652.34     1  2339541.02     1  3562111.32
+WILAYAH PERSEKUTUAN    120795.63     2    57117.90     2    36035.67     2   520394.81     2  1333422.68     2  2067766.69
+SARAWAK                 77206.60     3    23438.13     5    17803.91     4   298060.02     3   795700.52     3  1212209.18
+PULAU PINANG            52270.28     4    21918.56     7    20248.43     3   261908.98     4   742425.11     4  1098771.36
+PAHANG                  51779.29     5    22543.34     6    13742.60     5   243502.60     5   654169.01     5   985736.84
+JOHOR                   48048.95     7    29909.99     3    13275.59     7   229314.73     6   634933.25     6   955482.51
+PERAK                   51429.51     6    25505.42     4    13563.44     6   194421.75     7   512434.03     7   797354.15
+NEGERI SEMBILAN         35490.74     8    21265.77     8     8267.84     8   158594.52     8   389614.83     8   613233.70
+SABAH                   14840.92    11    13844.44     9     7067.58     9    97580.59     9   261357.50     9   394691.03
+KEDAH                   19645.74     9    10445.08    10     5329.44    10    87510.11    10   249726.23    10   372656.60
+KELANTAN                15292.60    10     9365.17    11     5263.52    11    64211.53    11   171996.39    11   266129.21
+PERLIS                   9186.03    12     4142.45    13     1713.95    12    56974.50    12   137582.73    12   209599.66
+MELAKA                   7847.30    13     5277.83    12      563.07    13    47841.02    13   136362.54    13   197891.76
+
+13 rows selected.
+
+SQL> set linesize 90
+SQL> set pagesize 120
+SQL> break on rest_typename skip 1 duplicates
+SQL> 
+SQL> TTITLE CENTER  'TOP 3 For Each Restaurant Branch Based on Input Year and State'SKIP 1 -
+> CENTER ======================================================================== SKIP 1
+SQL> column TotalSales format 9999999.99
+SQL> column AveragePerOrder format 9999999.99
+SQL> column ranks format 99
+SQL> column rest_name format a25
+SQL> column rest_branchid format 99999
+SQL> column TotalQty format 99999
+SQL> column Total_Order format 9999
+SQL> column rest_typename format a10
+SQL> column AveragePerOrder HEADING 'Average|  Per  |Order '
+SQL> column TotalQty HEADING 'Total|QTY'
+SQL> column Total_Order HEADING 'Total|Order'
+SQL> column rest_branchid HEADING 'Branch|ID'
+SQL> column rest_typename HEADING 'Resturant|Type'
+SQL> 
+SQL> SELECT rest_typename,
+  2         rest_name,
+  3         rest_branchid,
+  4         Total_Order,
+  5         TotalQty,
+  6         Total_Sales,ranks,
+  7         AveragePerOrder
+  8  FROM
+  9    ( SELECT rest_typename,
+ 10             rest_name, rest_branchid,
+ 11             sum(quantity) as TotalQTY,
+ 12             sum(line_total) as Total_Sales,
+ 13             count(distinct orderid) as Total_Order,
+ 14             ROW_NUMBER() OVER (PARTITION BY rest_typename
+ 15                                ORDER BY sum(s.line_total)
+ 16                                DESC)AS RANKS,
+ 17             ROUND(sum(line_total)/count(distinct orderid),2)
+ 18             AS AveragePerOrder
+ 19      FROM sales_fact S, dim_restaurants R
+ 20      Where s.restaurant_key = r.restaurant_key
+ 21            AND extract(year from s.order_date) = &year_input
+ 22            AND rest_state = UPPER('&state_input')
+ 23      Group by r.rest_typename,R.rest_branchid,rest_name
+ 24    )
+ 25  WHERE RANKS <= 3
+ 26  ORDER BY rest_typename,Total_Sales DESC;
+Enter value for year_input: 2020
+old  21:           AND extract(year from s.order_date) = &year_input
+new  21:           AND extract(year from s.order_date) = 2020
+Enter value for state_input: Wilayah Persekutuan
+old  22:           AND rest_state = UPPER('&state_input')
+new  22:           AND rest_state = UPPER('Wilayah Persekutuan')
+
+              TOP 3 For Each Restaurant Branch Based on Input Year and State
+         ========================================================================
+                                                                               Average
+Resturant                            Branch Total  Total                         Per
+Type       REST_NAME                     ID Order    QTY TOTAL_SALES RANKS      Order
+---------- ------------------------- ------ ----- ------ ----------- ----- -----------
+ARAB       ARABELLA RESTAURANT        10386    90   1352    38946.00     1      432.73
+ARAB       ARABELLA RESTAURANT        10387    70    884    25140.00     2      359.14
+ARAB       SABA RESTAURANT            10003    83   1047    19831.00     3      238.93
+
+CAFE       WHEELER'S CAFE             10273    72   2158    43149.20     1      599.29
+CAFE       3 LEG CAT                  10277    98   2235    33174.00     2      338.51
+CAFE       CHINA HOUSE                10159    77   1629    26655.70     3      346.18
+
+CHINESE    FEI FAN STEAMBOAT          10310    72   2123   121621.75     1     1689.19
+CHINESE    FEI FAN STEAMBOAT          10311    76   2088   114308.04     2     1504.05
+CHINESE    MING GARDEN                10251    85   1381    88965.00     3     1046.65
+
+FAST FOOD  4FINGERS CRISPY CHICKEN    10343    89   1310    64515.32     1      724.89
+FAST FOOD  4FINGERS CRISPY CHICKEN    10341    83   1045    49761.40     2      599.53
+FAST FOOD  4FINGERS CRISPY CHICKEN    10340    64    892    42615.64     3      665.87
+
+JAPANESE   NAUGHTY NURI'S             10528    79   1072   162957.00     1     2062.75
+JAPANESE   IKETERU RESTAURANT         10396    83   1240    72266.00     2      870.67
+JAPANESE   ZIPANGU                    10410    95   1341    69816.00     3      734.91
+
+KOREAN     KOBQ                       10078    92   1210    47070.00     1      511.63
+KOREAN     SAE MA EUL KOREAN BBQ      10225    94   1363    41863.20     2      445.35
+KOREAN     NANDA CHICKEN              10409    89   1241    40996.00     3      460.63
+
+MAMAK      IMPIAN MAJU MAMAK          10315   112   1584    89141.11     1      795.90
+MAMAK      IMPIAN MAJU MAMAK          10317    93   1362    76603.72     2      823.70
+MAMAK      IMPIAN MAJU MAMAK          10316    92   1377    75000.86     3      815.23
+
+THAILAND   MY ELEPHANT                10026    94   1284    24906.00     1      264.96
+THAILAND   MY ELEPHANT                10025    82   1164    19618.50     2      239.25
+THAILAND   SUPPER                     10481    86   1395    17762.30     3      206.54
+
+VIETNAMESE PHO STREET                 10379    85   1175    19924.43     1      234.41
+VIETNAMESE SAIGON HOUSE CUISINE       10064    70    981    19388.00     2      276.97
+VIETNAMESE SAIGON BOWL                10193    80   1004    15851.30     3      198.14
+
+WESTERN    FARQUHAR MANSION FINE DIN  10486    86   1202    71666.00     1      833.33
+           ING & LOUNGE PENANG
+
+WESTERN    THIRTYTWO AT THE MANSION   10470    82   1117    47804.00     2      582.98
+WESTERN    LK WESTERN                 10043    97   1279    40589.80     3      418.45
+
+
+30 rows selected.
+
+SQL> set linesize 80
+SQL> COLUMN PERCENTAGE_VS_TOPCITY HEADING 'Percentage|  VS  |TopCity'
+SQL> COLUMN RANKQuantity HEADING 'Rank|Quantity'COLUMN RANKSales HEADING 'Rank|Sales|(Discount)'
+SP2-0158: unknown COLUMN option "COLUMN"
+SQL> COLUMN Total_Actual_Sales_Discount HEADING 'Sales|(Discount)'
+SQL> COLUMN Total_Sales FORMAT 9999999.99
+SQL> COLUMN Total_Actual_Sales_Discoun FORMAT 9999999.99
+SQL> 
+SQL> 
+SQL> Create or Replace view Top_City_View_2020 as
+  2  Select * from
+  3  (Select rest_city,
+  4          sum(quantity) Top_Qty,
+  5          sum(line_total) Top_Sales,
+  6  sum(actual_amount_paid) Top_Actual_Sales
+  7   From sales_fact s, dim_restaurants r, dim_date d
+  8   Where s.restaurant_key = r.restaurant_key
+  9         AND d.date_key = s.date_key
+ 10         AND extract(year from order_date) = 2020
+ 11   Group by rest_city
+ 12   Order by 4 DESC)
+ 13  Where rownum<=1;
+
+View created.
+
+SQL> 
+SQL> 
+SQL> Create or Replace view Top10_City_View_2020 as
+  2  Select * from
+  3  (Select rest_city,
+  4          sum(s.quantity) Total_Qty,
+  5          sum(s.line_total) Total_Sales,
+  6  sum(s.actual_amount_paid) Total_Actual_Sales_Discount
+  7   From sales_fact s, dim_restaurants r, dim_date d
+  8   Where s.restaurant_key = r.restaurant_key
+  9         AND d.date_key = s.date_key
+ 10         AND extract(year from order_date) = 2020
+ 11   Group by rest_city
+ 12   Order by 4 DESC)
+ 13  Where rownum<=10;
+
+View created.
+
+SQL> 
+SQL> column Percentage_vs_TopCity format 990.00
+SQL> 
+SQL> TTITLE CENTER  'VS Top City Sales with Top 10 City in Percentage'SKIP 1 -
+> CENTER ===================================================== SKIP 1
+SQL> Select A.rest_city,
+  2         A.Total_Qty,
+  3         A.Total_Sales,
+  4         A.Total_Actual_Sales_Discount,
+  5         ROUND(A.Total_Actual_Sales_Discount/B.Top_Actual_Sales*100,2) Percentage_vs_TopCity
+  6  from Top10_City_View_2020 A, Top_City_View_2020 B;
+
+                VS Top City Sales with Top 10 City in Percentage
+              =====================================================
+                                                                 Percentage
+                                                           Sales       VS
+REST_CITY                       TOTAL_QTY TOTAL_SALES (Discount)    TopCity
+------------------------------ ---------- ----------- ---------- ----------
+KUALA LUMPUR                       192749  4056706.61 3542444.93     100.00
+PETALING JAYA                       90173  1780637.61 1557761.24      43.97
+JOHOR BAHRU                         74977  1421749.26 1246426.91      35.19
+KLANG                               61170  1019339.40  886821.47      25.03
+KUCHING                             40864   954367.66  840940.86      23.74
+IPOH                                49093   903993.89  786529.86      22.20
+SEREMBAN                            15622   332678.04  287908.36       8.13
+SERI KEMBANGAN                       8565   270428.43  237153.78       6.69
+SHAH ALAM                            9312   164747.15  143609.21       4.05
+KAJANG                               8677   159725.61  139424.56       3.94
+
+10 rows selected.
+
+SQL> 
+SQL> spool off
