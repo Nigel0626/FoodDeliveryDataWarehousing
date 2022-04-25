@@ -1,0 +1,20 @@
+CREATE TABLE RestaurantType(
+  RestaurantTypeId     NUMBER(5)   NOT NULL,
+  TypeName             VARCHAR(20) NOT NULL,
+  Description          VARCHAR(50),
+PRIMARY KEY (RestaurantTypeId)
+);
+
+INSERT INTO RestaurantType VALUES (10001, 'Fast Food', NULL);
+INSERT INTO RestaurantType VALUES (10002, 'Western', NULL);
+INSERT INTO RestaurantType VALUES (10003, 'Chinese', NULL);
+INSERT INTO RestaurantType VALUES (10004, 'Japanese', NULL);
+INSERT INTO RestaurantType VALUES (10005, 'Vietnamese', NULL);
+INSERT INTO RestaurantType VALUES (10006, 'Korean', NULL);
+INSERT INTO RestaurantType VALUES (10007, 'Thailand', NULL);
+INSERT INTO RestaurantType VALUES (10008, 'Arab', NULL);
+INSERT INTO RestaurantType VALUES (10009, 'Mamak', NULL);
+INSERT INTO RestaurantType VALUES (10010, 'Cafe', NULL);
+
+-- 10 records
+SELECT COUNT(*) FROM RestaurantType;

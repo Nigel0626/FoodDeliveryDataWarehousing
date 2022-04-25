@@ -1,0 +1,11 @@
+start C:\Database\Assignment\Create_Insert_Table\0_Category.txt
+start c:\Database\Assignment\Create_Insert_Table\0_Food.txt
+start c:\Database\Assignment\Create_Insert_Table\0_RestaurantType.txt
+start c:\Database\Assignment\Create_Insert_Table\0_Rider.txt
+start c:\Database\Assignment\Create_Insert_Table\0_TimeMeal.txt
+start c:\Database\Assignment\Create_Insert_Table\0_Users.txt
+start c:\Database\Assignment\Create_Insert_Table\1_ItemCombo.txt
+start c:\Database\Assignment\Create_Insert_Table\1_Promotion.txt
+start c:\Database\Assignment\Create_Insert_Table\1_Restaurant.txt
+start c:\Database\Assignment\Create_Insert_Table\2_Branch.txt
+start c:\Database\Assignment\Create_Insert_Table\2_MenuList.txt

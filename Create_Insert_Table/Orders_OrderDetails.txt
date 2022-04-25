@@ -1,0 +1,538 @@
+DROP TABLE Orderdetails;
+DROP TABLE Orders;
+
+DROP TABLE Test_ord;
+CREATE TABLE Test_Ord(
+  OrderDateTime     TIMESTAMP     NOT NULL,
+  DispatchDateTime  TIMESTAMP,
+  PaymentType       VARCHAR(15)   NOT NULL,
+  Amount            NUMBER(7,2)   DEFAULT 0.0,
+  Discount          NUMBER(7,2)   DEFAULT 0.0,
+  Incentives        NUMBER(7,2)   DEFAULT 0.0,
+  Rating            NUMBER(1),
+  Comments          VARCHAR(100),
+  UsersId           NUMBER(5)     NOT NULL,
+  BranchId          NUMBER(5)     NOT NULL,
+  RiderId           NUMBER(5),
+  PromotionId       NUMBER(5),
+  --PRIMARY KEY (OrderId),
+  FOREIGN KEY (UsersId) REFERENCES Users (UsersId),
+  FOREIGN KEY (BranchId) REFERENCES Branch (BranchId),
+  FOREIGN KEY (RiderId) REFERENCES Rider (RiderId),
+  FOREIGN KEY (PromotionId) REFERENCES Promotion (PromotionId),
+  CONSTRAINT chk_order_dispatch_dt1 CHECK (DispatchDateTime > OrderDateTime),
+  CONSTRAINT chk_pay_type1 CHECK (PaymentType IN ('Cash', 'Card', 'FPX', 'E-wallet')),
+  CONSTRAINT chk_rating1 CHECK (Rating BETWEEN 1 AND 5)
+);
+
+ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'HH24:MI';
+
+CREATE OR REPLACE PROCEDURE PRC_GEN_FOOD_ORD AS
+   v_startDate    DATE;
+   v_endDate      DATE;
+   COUNTER        NUMBER(1);
+   v_counter      NUMBER(3);
+   v_randNum      NUMBER(3);
+   v_allDay       NUMBER(1);
+   rand_type      NUMBER(1);
+   v_startTime    TIMESTAMP;
+   v_endTime      TIMESTAMP;
+   v_time         TIMESTAMP;
+--   v_section      TIMEMEAL.TimeSection%TYPE;
+--   v_timeID       TIMEMEAL.TimeMealID%TYPE;
+   v_finalStart   Test_Ord.OrderDateTime%TYPE;
+   v_finalEnd     Test_Ord.DispatchDateTime%TYPE;
+   v_userID       Test_Ord.UsersID%TYPE;
+   v_branchID     Test_Ord.BranchID%TYPE;
+   v_riderID      Test_Ord.RiderID%TYPE;
+   v_rating       Test_Ord.Rating%TYPE;
+   v_orderTime    Test_Ord.OrderDateTime%TYPE;
+   v_dispatchTime Test_Ord.DispatchDateTime%TYPE;
+   v_promotionID  Test_Ord.PromotionID%TYPE;
+   v_paymentType  Test_Ord.PaymentType%TYPE;
+   v_comments     Test_Ord.Comments%TYPE;
+   
+   cursor cur_TimeMeal is
+       SELECT DISTINCT D.TimeMealID, D.TimeSection
+       FROM (Select RestaurantID 
+             from Branch
+             where BranchID=v_branchID) A
+       join Restaurant B
+            on A.RestaurantID = B.RestaurantID
+       join MenuList C
+            on B.RestaurantID = C.RestaurantID
+       join TimeMeal D
+            on C.TimeMealID   = D.TimeMealID
+       ORDER BY D.TimeMealID;
+
+
+BEGIN
+   v_counter := 1;
+   v_startDate := '1-JAN-2015';
+
+   WHILE v_startDate <> TO_CHAR(SYSDATE,'DD-MON-YYYY')
+   LOOP
+--      DBMS_OUTPUT.PUT_LINE('Date: '||v_startDate);
+--      DBMS_OUTPUT.PUT_LINE('-------------');
+      v_randNum := TRUNC(DBMS_RANDOM.value(50,200)); -- number of orders per day, should be based on 10% to 50% of total users (300-900)
+      WHILE v_counter <= v_randNum 
+      LOOP
+         v_allDay       := 0;
+         v_endDate      := v_startDate;
+         v_finalStart   := TO_DATE(TO_CHAR(v_startDate, 'DD-MON-YYYY') ||' '|| '00:00','DD-MON-YYYY HH24:MI'); 
+         v_finalEnd     := TO_DATE(TO_CHAR(v_endDate, 'DD-MON-YYYY') ||' '|| '00:00','DD-MON-YYYY HH24:MI'); 
+
+         v_userID       := TRUNC(DBMS_RANDOM.value(10001,10901));
+         v_branchID     := TRUNC(DBMS_RANDOM.value(10001,10541));
+         v_riderID      := TRUNC(DBMS_RANDOM.value(10001,10101));
+         v_rating       := TRUNC(DBMS_RANDOM.value(1,6));
+         v_comments     := DBMS_RANDOM.string('A',TRUNC(DBMS_RANDOM.value(10,61))); --generate mixed case with length between 10 to 60
+        
+         -- Random generate promotion ID (can be null)
+         IF TRUNC(DBMS_RANDOM.value(0,2)) = 0 THEN
+            SELECT PromotionID INTO v_promotionID 
+            FROM   Promotion 
+            WHERE  PromotionID = TRUNC(DBMS_RANDOM.value(10001,10066));
+         ELSE
+            v_promotionID := NULL;
+         END IF;
+ 
+         -- Random generate payment type 
+         rand_type := TRUNC(DBMS_RANDOM.value(1,5));
+
+         IF rand_type = 1 THEN 
+            v_paymentType := 'Cash';
+         ELSIF rand_type = 2 THEN 
+            v_paymentType := 'Card';
+         ELSIF rand_type = 3 THEN 
+            v_paymentType := 'FPX';
+         ELSE 
+            v_paymentType := 'E-wallet';
+         END IF;
+
+         COUNTER        := 1;
+         FOR c IN cur_TimeMeal LOOP
+--               DBMS_OUTPUT.PUT_LINE('Section   : '||c.timesection);
+
+               SELECT StartTime, EndTime INTO v_startTime, v_endTime
+               FROM   TimeMeal
+               WHERE  timeSection = c.timesection;
+      
+               IF Counter = 1 AND c.timesection <> 'All day' THEN
+                  v_finalStart := to_date(to_char(v_startDate, 'DD-MON-YYYY') ||' '|| TO_CHAR(v_startTime, 'HH24:MI'),'DD-MON-YYYY HH24:MI'); 
+               ELSIF c.timesection <> 'All day' THEN
+                  IF v_startTime < v_finalStart THEN
+                     v_finalStart := to_date(to_char(v_startDate, 'DD-MON-YYYY') ||' '|| TO_CHAR(v_startTime, 'HH24:MI'),'DD-MON-YYYY HH24:MI'); 
+                  END IF;
+               ELSIF c.timesection = 'All day' THEN
+                  v_allDay := 1;
+               END IF;
+
+               IF v_endTime = '00:00' OR v_endTime = '04:00' THEN
+                  v_finalEnd   := to_date(to_char(v_endDate+1, 'DD-MON-YYYY') ||' '|| TO_CHAR(v_endTime, 'HH24:MI'),'DD-MON-YYYY HH24:MI'); 
+               ELSE
+                  v_finalEnd   := to_date(to_char(v_endDate, 'DD-MON-YYYY') ||' '|| TO_CHAR(v_endTime, 'HH24:MI'),'DD-MON-YYYY HH24:MI'); 
+               END IF;
+               COUNTER := COUNTER + 1;
+            END LOOP; -- FOR c IN
+
+
+            IF v_allDay = 1 THEN
+               v_orderTime    := (TRUNC(v_startDate) + (TRUNC(DBMS_RANDOM.value(0,1000))/1440));
+               v_dispatchTime := v_orderTime +(1/1440*(TRUNC(DBMS_RANDOM.value(10,71))));
+            ELSE
+               LOOP
+                  v_orderTime    := (v_startDate + TRUNC(dbms_RANDOM.value(0,2)))+ (TRUNC(DBMS_RANDOM.value(0,1000))/1440);
+                  EXIT WHEN v_orderTime BETWEEN v_finalStart AND v_finalEnd;
+               END LOOP;
+               v_dispatchTime := v_orderTime +(1/1440*(TRUNC(DBMS_RANDOM.value(10,71))));
+            END IF; 
+
+--            DBMS_OUTPUT.PUT_LINE('Order '||v_counter);
+--            DBMS_OUTPUT.PUT_LINE('Payment Type: '||v_orderTime);
+--            DBMS_OUTPUT.PUT_LINE('User ID      : '||v_userID);
+--            DBMS_OUTPUT.PUT_LINE('Branch ID    : '||v_branchID);
+--            DBMS_OUTPUT.PUT_LINE('Rider ID     : '||v_riderID);
+--            DBMS_OUTPUT.PUT_LINE('Promotion ID : '||v_promotionID);
+--            DBMS_OUTPUT.PUT_LINE('Oder Time    : '||v_orderTime);
+--            DBMS_OUTPUT.PUT_LINE('Dispatch Time: '||v_dispatchTime);
+--            DBMS_OUTPUT.PUT_LINE('Payment Type : '||v_paymentType);
+--            DBMS_OUTPUT.PUT_LINE('Rating       : '||v_rating);
+--            DBMS_OUTPUT.PUT_LINE(chr(10));
+            --order_seq.nextval,
+            INSERT INTO TEST_ORD VALUES(v_orderTime, v_dispatchTime, v_paymentType, 0.0, 0.0, 0.0, v_rating, v_comments, v_userID, 
+                                     v_branchID, v_riderID, v_promotionID);
+            v_counter := v_counter+1;
+
+      END LOOP; -- WHILE v_counter <= v_randNum
+ 
+      v_counter    := 1;
+      v_startDate  := v_startDate + 1;
+--      DBMS_OUTPUT.PUT_LINE('-----------------------------------------------');
+      
+   END LOOP; -- While v_startDate <> TO_CHAR(SYSDATE,'DD-MON-YYYY')
+END;
+/
+
+SET SERVEROUTPUT ON
+select to_char(sysdate,'hh:mi:ss') from dual;
+EXEC PRC_GEN_FOOD_ORD();
+select to_char(sysdate,'hh:mi:ss') from dual;
+
+SELECT COUNT(*) FROM TEST_ORD;
+
+ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'DD-MON-YYYY HH24:MI';
+
+drop table orders;
+CREATE TABLE Orders(
+  OrderId           NUMBER     NOT NULL,
+  OrderDateTime     TIMESTAMP     NOT NULL,
+  DispatchDateTime  TIMESTAMP,
+  PaymentType       VARCHAR(15)   NOT NULL,
+  Amount            NUMBER(7,2)   DEFAULT 0.0,
+  Discount          NUMBER(7,2)   DEFAULT 0.0,
+  Incentives        NUMBER(7,2)   DEFAULT 0.0,
+  Rating            NUMBER(1),
+  Comments          VARCHAR(100),
+  UsersId           NUMBER(5)     NOT NULL,
+  BranchId          NUMBER(5)     NOT NULL,
+  RiderId           NUMBER(5),
+  PromotionId       NUMBER(5),
+  PRIMARY KEY (OrderId),
+  FOREIGN KEY (UsersId) REFERENCES Users (UsersId),
+  FOREIGN KEY (BranchId) REFERENCES Branch (BranchId),
+  FOREIGN KEY (RiderId) REFERENCES Rider (RiderId),
+  FOREIGN KEY (PromotionId) REFERENCES Promotion (PromotionId),
+  CONSTRAINT chk_order_dispatch_dt CHECK (DispatchDateTime > OrderDateTime),
+  CONSTRAINT chk_pay_type CHECK (PaymentType IN ('Cash', 'Card', 'FPX', 'E-wallet')),
+  CONSTRAINT chk_rating CHECK (Rating BETWEEN 1 AND 5)
+);
+
+DROP SEQUENCE order_seq;
+CREATE SEQUENCE order_seq
+START WITH 10001
+INCREMENT by 1;
+
+INSERT INTO Orders
+select order_seq.nextval, A.* from(
+SELECT OrderDateTime, DispatchDateTime,
+       PaymentType,Amount,Discount,Incentives,Rating,Comments,
+       UsersId,BranchId,RiderId,PromotionId
+FROM Test_Ord
+ORDER by OrderDateTime) A;
+
+set linesize 100
+SELECT * FROM
+(SELECT OrderId, OrderDateTime
+ FROM Orders
+ ORDER BY OrderId
+)WHERE ROWNUM <= 10;
+
+----------------------------------------------------------------------------------------------
+drop table OrderDetails;
+CREATE TABLE Orderdetails(
+  OrderId      NUMBER     NOT NULL,
+  MenuListId   NUMBER(5)     NOT NULL,
+  Quantity     NUMBER(3)     NOT NULL,
+PRIMARY KEY (OrderId, MenuListId),
+FOREIGN KEY(orderId) REFERENCES Orders(orderId),
+FOREIGN KEY(MenuListId) REFERENCES MenuList(MenuListId),
+CONSTRAINT chk_odquantity CHECK (Quantity >= 0)
+);
+
+-- if you drop the OrderDetails table, need to compile this trigger again.
+CREATE OR REPLACE TRIGGER TRG_UPD_ORDER_AMT
+AFTER INSERT OR UPDATE OR DELETE OF Quantity ON OrderDetails
+FOR EACH ROW
+DECLARE
+   vPrice MenuList.PricePerUnit%TYPE;
+   vTimeTaken NUMBER(3);
+   vDiscount NUMBER(5);
+BEGIN
+   CASE
+      WHEN INSERTING OR UPDATING THEN
+         SELECT PricePerUnit INTO vPrice
+         FROM MenuList
+         WHERE MenuListId = :NEW.MenuListId;
+
+      WHEN DELETING THEN
+         SELECT PricePerUnit INTO vPrice
+         FROM MenuList
+         WHERE MenuListId = :OLD.MenuListId;
+   END CASE;
+
+   CASE 
+      WHEN INSERTING THEN
+         UPDATE Orders
+         SET Amount = Amount + (vPrice * :NEW.Quantity)
+         WHERE OrderId = :NEW.OrderId;
+      
+      WHEN UPDATING THEN
+         UPDATE Orders
+         SET Amount = Amount - (vPrice * :OLD.Quantity) + (vPrice * :NEW.Quantity)
+         WHERE OrderId = :NEW.OrderId;
+
+      WHEN DELETING THEN
+         UPDATE Orders
+         SET Amount = Amount - (vPrice * :OLD.Quantity)
+         WHERE OrderId = :OLD.OrderId;
+    END CASE;
+
+    CASE 
+       WHEN INSERTING OR UPDATING THEN
+          SELECT PromotionId INTO vDiscount
+          FROM Orders
+          WHERE OrderId = :NEW.OrderId;
+ 
+          IF vDiscount IS NULL THEN
+             UPDATE Orders 
+             SET Discount = 0
+             WHERE OrderId = :NEW.OrderId;
+          ELSE
+             UPDATE Orders 
+             SET Discount = Amount * (SELECT A.DiscountRate / 100
+                                      FROM Promotion A, Orders B 
+                                      WHERE A.PromotionId = B.PromotionId AND
+                                            OrderId = :NEW.OrderId)
+             WHERE OrderId = :NEW.OrderId;
+          END IF;
+
+          SELECT (TO_DATE(DispatchDateTime, 'HH24:MI') - 
+                  TO_DATE(OrderDateTime, 'HH24:MI')) * 24 * 60 
+                 INTO vTimeTaken
+          FROM Orders
+          WHERE OrderId = :NEW.OrderId;
+         
+          IF (vTimeTaken <= 10) THEN
+             UPDATE Orders
+             SET Incentives = 5 + (Amount * 0.08)
+             WHERE OrderId = :NEW.OrderId;
+   
+          ELSIF (vTimeTaken > 30) THEN
+             UPDATE Orders
+             SET Incentives = 5 + (Amount * 0.03) 
+             WHERE OrderId = :NEW.OrderId;
+          ELSE
+             UPDATE Orders
+             SET Incentives = 5 + (Amount * 0.05) 
+             WHERE OrderId = :NEW.OrderId;
+         END IF;
+         
+       WHEN DELETING THEN
+          SELECT PromotionId INTO vDiscount
+          FROM Orders
+          WHERE OrderId = :OLD.OrderId;
+ 
+          IF vDiscount IS NULL THEN
+             UPDATE Orders 
+             SET Discount = 0
+             WHERE OrderId = :OLD.OrderId;
+          ELSE
+             UPDATE Orders 
+             SET Discount = Amount * (SELECT A.DiscountRate / 100
+                                      FROM Promotion A, Orders B 
+                                      WHERE A.PromotionId = B.PromotionId AND
+                                            OrderId = :OLD.OrderId)
+             WHERE OrderId = :NEW.OrderId;
+          END IF;
+         
+          SELECT (TO_DATE(DispatchDateTime, 'HH24:MI') - 
+                  TO_DATE(OrderDateTime, 'HH24:MI')) * 24 * 60 
+                 INTO vTimeTaken
+          FROM Orders
+          WHERE OrderId = :OLD.OrderId;
+         
+          IF (vTimeTaken <= 10) THEN
+             UPDATE Orders
+             SET Incentives = 5 + (Amount * 0.08) 
+             WHERE OrderId = :OLD.OrderId;
+   
+          ELSIF (vTimeTaken > 30) THEN
+             UPDATE Orders
+             SET Incentives = 5 + (Amount * 0.03)  
+             WHERE OrderId = :OLD.OrderId;
+         ELSE
+             UPDATE Orders
+             SET Incentives = 5 + (Amount * 0.05) 
+             WHERE OrderId = :OLD.OrderId;
+         END IF;
+    END CASE;
+END;
+/
+
+ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'HH24:MI';
+
+CREATE OR REPLACE PROCEDURE CHK_ORDERDETAILS AS
+   v_menulistId ORDERDETAILS.MenuListId%TYPE;
+   v_orderId ORDERDETAILS.OrderId%TYPE;
+   v_quantity ORDERDETAILS.Quantity%TYPE;
+   v_timeMealId TIMEMEAL.TimeMealId%TYPE;
+   checkBranchId ORDERS.BranchID%TYPE;
+   checkTime ORDERS.OrderDateTime%TYPE;
+   numMenuListId ORDERDETAILS.MenuListId%TYPE;
+
+   randomChoose NUMBER(2);
+   indexArray NUMBER(2);
+   countOrder NUMBER(2);
+   randomNumOrder NUMBER(2);
+   randomOrderId NUMBER(2);
+   countMLid NUMBER(3);
+
+   menulistArray DBMS_SQL.NUMBER_TABLE;
+
+   CURSOR ORDER_CURSOR IS
+     SELECT OrderId, BranchId, OrderDateTime
+     FROM Orders;
+
+BEGIN 
+   OPEN ORDER_CURSOR;
+   LOOP 
+      FETCH ORDER_CURSOR INTO v_orderId, checkBranchId, checkTime;
+      EXIT WHEN ORDER_CURSOR%NOTFOUND;
+      checkTime := TO_TIMESTAMP(TO_CHAR(checkTime,'HH24:MI'),'HH24:MI');
+--      DBMS_OUTPUT.PUT_LINE(v_orderId||'  '||checkBranchId||'  '||checkTime);
+  
+      IF checkTime BETWEEN TO_TIMESTAMP('00:01','HH24:MI') AND TO_TIMESTAMP('04:00','HH24:MI') THEN
+         v_timeMealId := 10045;
+      ELSIF checkTime BETWEEN TO_TIMESTAMP('05:00','HH24:MI') AND TO_TIMESTAMP('11:59','HH24:MI') THEN
+         v_timeMealId := 10015;
+      ELSIF checkTime BETWEEN TO_TIMESTAMP('14:01','HH24:MI') AND TO_TIMESTAMP('17:59','HH24:MI') THEN
+         v_timeMealId := 10045;
+      ELSIF checkTime BETWEEN TO_TIMESTAMP('12:00','HH24:MI') AND TO_TIMESTAMP('14:00','HH24:MI') THEN
+         v_timeMealId := 10245;
+      ELSIF checkTime BETWEEN TO_TIMESTAMP('18:00','HH24:MI') AND TO_TIMESTAMP('23:59','HH24:MI') THEN
+         v_timeMealId := 10345;
+      ELSIF checkTime = TO_TIMESTAMP('00:00','HH24:MI') THEN
+         v_timeMealId := 10345;
+      ELSE 
+         v_timeMealId := 10005;
+      END IF;
+  
+--       DBMS_OUTPUT.PUT_LINE('timemealid: '||v_timeMealId);
+      countMLid := 1;
+
+      IF v_timeMealId = 10045 THEN
+         FOR i IN(
+            SELECT MenulistId INTO numMenuListId
+	    FROM MenuList
+	    WHERE RestaurantId IN (SELECT RestaurantId
+                                   FROM Branch
+	  	  	           WHERE BranchId = checkBranchId) AND
+	  	  (TimeMealId = 10004 OR TimeMealId = 10005))
+	 LOOP
+	    menulistArray(countMLid) := i.MenulistId;
+            countMLid := countMLid + 1;
+	 END LOOP;
+
+      ELSIF v_timeMealId = 10015 THEN
+         FOR i IN(
+            SELECT MenulistId INTO numMenuListId
+	    FROM MenuList
+	    WHERE RestaurantId IN (SELECT RestaurantId
+                                   FROM Branch
+                                   WHERE BranchId = checkBranchId) AND
+		  (TimeMealId = 10001 OR TimeMealId = 10005))
+	 LOOP
+	    menulistArray(countMLid) := i.MenulistId;
+            countMLid := countMLid + 1;
+         END LOOP;
+
+      ELSIF v_timeMealId = 10245 THEN
+         FOR i IN(
+            SELECT MenulistId INTO numMenuListId
+	    FROM MenuList
+	    WHERE RestaurantId IN (SELECT RestaurantId
+                                   FROM Branch
+                                   WHERE BranchId = checkBranchId) AND
+                  (TimeMealId = 10002 OR TimeMealId = 10004 OR TimeMealId = 10005))
+	 LOOP
+	    menulistArray(countMLid) := i.MenulistId;
+            countMLid := countMLid + 1;
+         END LOOP;
+
+      ELSIF v_timeMealId = 10345 THEN
+         FOR i IN(
+            SELECT MenulistId INTO numMenuListId
+	    FROM MenuList
+	    WHERE RestaurantId IN (SELECT RestaurantId
+                                   FROM Branch
+                                   WHERE BranchId = checkBranchId) AND
+                  (TimeMealId = 10003 OR TimeMealId = 10004 OR TimeMealId = 10005))
+         LOOP
+	    menulistArray(countMLid) := i.MenulistId;
+            countMLid := countMLid + 1;
+         END LOOP;
+         
+      ELSE 
+         FOR i IN(
+            SELECT MenulistId INTO numMenuListId
+	    FROM MenuList
+	    WHERE RestaurantId IN (SELECT RestaurantId
+                                   FROM Branch
+                                   WHERE BranchId = checkBranchId) AND
+                  TimeMealId = 10005)
+         LOOP
+            menulistArray(countMLid) := i.MenulistId;
+            countMLid := countMLid + 1;
+         END LOOP;
+      END IF;
+  
+      countOrder := countMLid - 1;
+      IF countOrder BETWEEN 2 AND 12 THEN
+         randomOrderId := TRUNC(dbms_Random.value(1,countOrder-1));
+	 randomNumOrder := TRUNC(dbms_Random.value(1,2));
+      ELSIF countOrder = 1 THEN
+         randomOrderId := 1;
+	 randomNumOrder := 0;
+      ELSE
+         randomOrderId := TRUNC(dbms_Random.value(1,5));
+         randomNumOrder := TRUNC(dbms_Random.value(1,4));
+      END IF;
+  
+      randomChoose := TRUNC(dbms_Random.value(1,3));
+      IF randomChoose = 1 THEN
+         indexArray := 1 + randomNumOrder;
+         v_menulistId := menulistArray(indexArray);
+      ELSE
+         indexArray := countOrder - randomNumOrder;
+         v_menulistId := menulistArray(indexArray);
+      END IF;
+  
+      FOR i IN 1..randomOrderId
+      LOOP
+         v_quantity := TRUNC(dbms_Random.value(1,11));
+--         DBMS_OUTPUT.PUT_LINE('orderId: '||v_orderId||',menulistId: '||v_menulistId||',quantity: '||v_quantity);
+         INSERT INTO orderdetails VALUES(v_orderId, v_menulistId, v_quantity);
+	
+	 IF countOrder BETWEEN 2 AND 12 THEN
+	    randomNumOrder := TRUNC(dbms_Random.value(1,2));
+         ELSE
+            randomNumOrder := TRUNC(dbms_Random.value(1,4));
+         END IF;
+	
+	 IF randomChoose = 1 AND randomOrderId <> i THEN
+	    indexArray := indexArray + randomNumOrder;
+            v_menulistId := menulistArray(indexArray);
+         ELSIF randomChoose = 2 AND randomOrderId <> i THEN
+	    indexArray := indexArray - randomNumOrder;
+            v_menulistId := menulistArray(indexArray);
+         END IF;
+      END LOOP;
+  
+      FOR i IN menulistArray.FIRST .. menulistArray.LAST
+      LOOP
+         menulistArray.delete(i);
+      END LOOP;
+
+--      DBMS_OUTPUT.PUT_LINE('-------------------------------------');
+   END LOOP;
+END;
+/
+select to_char(sysdate,'hh:mi:ss') from dual;
+EXEC CHK_ORDERDETAILS();
+select to_char(sysdate,'hh:mi:ss') from dual;
+
+SELECT COUNT(*) FROM OrderDetails;
+
+ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'DD-MON-YYYY HH24:MI';
+

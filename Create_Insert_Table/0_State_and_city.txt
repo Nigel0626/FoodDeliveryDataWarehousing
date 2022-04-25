@@ -1,0 +1,52 @@
+DROP TABLE StateAndCity;
+CREATE TABLE StateAndCity(
+  StateAndCityID        NUMBER(5),
+  City                  VARCHAR(30)   NOT NULL,
+  State                 VARCHAR(30)   NOT NULL,
+PRIMARY KEY (StateAndCityID)
+);
+
+
+INSERT INTO StateAndCity VALUES (10001, 'Johor Bahru', 'Johor');
+INSERT INTO StateAndCity VALUES (10002, 'Kluang', 'Johor');
+INSERT INTO StateAndCity VALUES (10003, 'Kota Tinggi', 'Johor');
+INSERT INTO StateAndCity VALUES (10004, 'Alor Setar', 'Kedah');
+INSERT INTO StateAndCity VALUES (10005, 'Langkawi', 'Kedah');
+INSERT INTO StateAndCity VALUES (10006, 'Bunut Payong', 'Kelantan');
+INSERT INTO StateAndCity VALUES (10007, 'Melaka', 'Melaka');
+INSERT INTO StateAndCity VALUES (10008, 'Port Dickson', 'Negeri Sembilan');
+INSERT INTO StateAndCity VALUES (10009, 'Seremban', 'Negeri Sembilan');
+INSERT INTO StateAndCity VALUES (10010, 'Genting Highlands', 'Pahang');
+INSERT INTO StateAndCity VALUES (10011, 'Kuala Lipis', 'Pahang');
+INSERT INTO StateAndCity VALUES (10012, 'Kuantan', 'Pahang');
+INSERT INTO StateAndCity VALUES (10013, 'Mentakab', 'Pahang');
+INSERT INTO StateAndCity VALUES (10014, 'Bidor', 'Perak');
+INSERT INTO StateAndCity VALUES (10015, 'Ipoh', 'Perak');
+INSERT INTO StateAndCity VALUES (10016, 'Kuala Perlis', 'Perlis');
+INSERT INTO StateAndCity VALUES (10017, 'Bukit Mertajam', 'Pulau Pinang');
+INSERT INTO StateAndCity VALUES (10018, 'Butterworth', 'Pulau Pinang');
+INSERT INTO StateAndCity VALUES (10019, 'GeorgeTown', 'Pulau Pinang');
+INSERT INTO StateAndCity VALUES (10020, 'Perai', 'Pulau Pinang');
+INSERT INTO StateAndCity VALUES (10021, 'Pulau Tikus', 'Pulau Pinang');
+INSERT INTO StateAndCity VALUES (10022, 'Seberang Perai', 'Pulau Pinang');
+INSERT INTO StateAndCity VALUES (10023, 'Kota Kinabalu', 'Sabah');
+INSERT INTO StateAndCity VALUES (10024, 'Tawau', 'Sabah');
+INSERT INTO StateAndCity VALUES (10025, 'Kapit', 'Sarawak');
+INSERT INTO StateAndCity VALUES (10026, 'Kuching', 'Sarawak');
+INSERT INTO StateAndCity VALUES (10027, 'Miri', 'Sarawak');
+INSERT INTO StateAndCity VALUES (10028, 'Sibu', 'Sarawak');
+INSERT INTO StateAndCity VALUES (10029, 'Ampang', 'Selangor');
+INSERT INTO StateAndCity VALUES (10030, 'Balakong', 'Selangor');
+INSERT INTO StateAndCity VALUES (10031, 'Banting', 'Selangor');
+INSERT INTO StateAndCity VALUES (10032, 'Kajang', 'Selangor');
+INSERT INTO StateAndCity VALUES (10033, 'Klang', 'Selangor');
+INSERT INTO StateAndCity VALUES (10034, 'Petaling Jaya', 'Selangor');
+INSERT INTO StateAndCity VALUES (10035, 'Rawang', 'Selangor');
+INSERT INTO StateAndCity VALUES (10036, 'Sepang', 'Selangor');
+INSERT INTO StateAndCity VALUES (10037, 'Seri Kembangan', 'Selangor');
+INSERT INTO StateAndCity VALUES (10038, 'Shah Alam', 'Selangor');
+INSERT INTO StateAndCity VALUES (10039, 'Subang Jaya', 'Selangor');
+INSERT INTO StateAndCity VALUES (10040, 'Cheras', 'Wilayah Persekutuan');
+INSERT INTO StateAndCity VALUES (10041, 'Kuala Lumpur', 'Wilayah Persekutuan');
+
+select count(*) from StateAndCity;

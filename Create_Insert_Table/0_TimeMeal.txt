@@ -1,0 +1,19 @@
+ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'HH24:MI';
+
+DROP TABLE TimeMeal;
+CREATE TABLE TimeMeal(
+  TimeMealId    NUMBER(5)     NOT NULL,
+  TimeSection   VARCHAR(25)   NOT NULL,
+  StartTime     TIMESTAMP,
+  EndTime       TIMESTAMP,
+PRIMARY KEY (TimeMealId)
+);
+
+INSERT INTO TimeMeal VALUES (10001, 'Breakfast', '05:00', '11:59');
+INSERT INTO TimeMeal VALUES (10002, 'Lunch', '12:00', '14:00');
+INSERT INTO TimeMeal VALUES (10003, 'Dinner','18:00', '00:00');
+INSERT INTO TimeMeal VALUES (10004, 'Lunch and Dinner', '12:00', '04:00');
+INSERT INTO TimeMeal VALUES (10005, 'All day', NULL, NULL);
+
+-- 5 records
+SELECT COUNT(*) FROM TimeMeal;

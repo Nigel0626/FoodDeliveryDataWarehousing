@@ -1,0 +1,14 @@
+DROP TABLE Category;
+CREATE TABLE Category(
+  CategoryId   NUMBER(5)   NOT NULL,
+  Name         VARCHAR(20) NOT NULL,
+  Description  VARCHAR(50),
+PRIMARY KEY (CategoryId)
+);
+
+
+INSERT INTO Category VALUES (10001, 'Ala Carte', NULL);
+INSERT INTO Category VALUES (10002, 'Set Meal', NULL);
+
+-- 2 records
+SELECT COUNT(*) FROM Category;
