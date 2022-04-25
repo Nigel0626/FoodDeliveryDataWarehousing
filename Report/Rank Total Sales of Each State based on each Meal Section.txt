@@ -1,0 +1,98 @@
+set linesize 125
+set pagesize 120
+
+Create or Replace view T_Breakfast2020 AS
+Select U.state as state, 
+       sum(S.line_total) AS Total_Breakfast,
+       ROW_NUMBER() OVER(Order By sum(S.line_total) DESC) 
+       Ranks
+From sales_fact S,dim_menu M,dim_users U
+Where S.menu_key = M.menu_key AND 
+      M.time_section = 'BREAKFAST' 
+      AND U.user_key=S.user_key 
+      AND extract(year from S.order_date) = 2020
+Group by u.state;
+
+Create or Replace view T_LUNCH2020 AS
+Select U.state as state, 
+       sum(S.line_total) AS Total_LUNCH,
+       ROW_NUMBER() OVER(Order By sum(S.line_total) DESC) 
+       Ranks
+From sales_fact S,dim_menu M,dim_users U
+Where S.menu_key = M.menu_key 
+      AND M.time_section = 'LUNCH' 
+      AND U.user_key=S.user_key 
+      AND extract(year from S.order_date) = 2020
+Group by U.state;
+
+Create or Replace view T_DINNER2020 AS
+Select U.state as state, 
+       sum(S.line_total) AS Total_DINNER, 
+       ROW_NUMBER() OVER(Order By sum(S.line_total) DESC) 
+       Ranks
+From sales_fact S,dim_menu M,dim_users U
+Where S.menu_key = M.menu_key 
+      AND M.time_section = 'DINNER' 
+      AND U.user_key=S.user_key 
+      AND extract(year from S.order_date) = 2020
+Group by U.state;
+
+Create or Replace view T_LD2020 AS
+Select U.state as state, 
+       sum(S.line_total) AS Total_LUNCH_DINNER, 
+       ROW_NUMBER() OVER(Order By sum(S.line_total) DESC) 
+       Ranks
+From sales_fact S,dim_menu M,dim_users U
+Where S.menu_key = M.menu_key 
+      AND M.time_section = 'LUNCH AND DINNER' 
+      AND U.user_key=S.user_key 
+      AND extract(year from S.order_date) = 2020
+Group by U.state;
+
+Create or Replace view T_ALLDAY2020 AS
+Select U.state as state, 
+       sum(S.line_total) AS Total_ALL_DAY,
+       ROW_NUMBER() OVER(Order By sum(S.line_total) DESC) 
+       Ranks
+From sales_fact S,dim_menu M,dim_users U
+Where S.menu_key = M.menu_key 
+      AND M.time_section = 'ALL DAY' 
+      AND U.user_key=s.user_key 
+      AND extract(year from S.order_date) = 2020
+Group by U.state;
+
+column ranks format 99
+column state format a20
+column Total_Breakfast format 9999999.99
+column Total_Lunch format 9999999.99
+column Total_Dinner format 9999999.99
+column Total_LUNCH_DINNER format 9999999.99
+column Total_All_Day format 9999999.99
+column Total_Breakfast format 9999999.99
+column Total format 9999999.99
+column Total_Breakfast HEADING 'Total|Breakfast'
+column Total_Lunch HEADING 'Total|Lunch'
+column Total_Dinner HEADING 'Total|Dinner'
+column Total_LUNCH_DINNER HEADING 'Total|Lunch|Dinner'
+column Total_ALL_DAY HEADING 'Total|All|Day'
+
+
+
+TTITLE CENTER  'Rank of Each Time Meal Section Sales on each State'SKIP 1 -
+CENTER ======================================================================== SKIP   
+select B.state,Total_Breakfast,B.ranks,
+       Total_Lunch,L.ranks,
+       Total_Dinner,D.ranks,
+       Total_LUNCH_DINNER,LD.ranks,
+       Total_ALL_DAY,A.ranks,
+       (Total_Breakfast+Total_Lunch+Total_Dinner+Total_LUNCH_DINNER+Total_ALL_DAY) AS TOTAL 
+FROM T_Breakfast2020 B
+	join T_LUNCH2020 L
+	   on B.state = L.state
+	join T_DINNER2020 D  
+	   on B.state = D.state
+	join T_LD2020 LD 
+	   on B.state = LD.state
+	join T_ALLDAY2020 A 
+	   on B.state = A.state
+order by total desc;

@@ -1,0 +1,48 @@
+set linesize 80
+COLUMN PERCENTAGE_VS_TOPCITY HEADING 'Percentage|  VS  |TopCity'
+COLUMN RANKQuantity HEADING 'Rank|Quantity'COLUMN RANKSales HEADING 'Rank|Sales|(Discount)'
+COLUMN Total_Actual_Sales_Discount HEADING 'Sales|(Discount)'
+COLUMN Total_Sales FORMAT 9999999.99
+COLUMN Total_Actual_Sales_Discoun FORMAT 9999999.99
+
+
+Create or Replace view Top_City_View_2020 as
+Select * from
+(Select rest_city,
+        sum(quantity) Top_Qty,
+        sum(line_total) Top_Sales,
+	sum(actual_amount_paid) Top_Actual_Sales
+ From sales_fact s, dim_restaurants r, dim_date d
+ Where s.restaurant_key = r.restaurant_key 
+       AND d.date_key = s.date_key 
+       AND extract(year from order_date) = 2020
+ Group by rest_city
+ Order by 4 DESC)
+Where rownum<=1;
+
+
+Create or Replace view Top10_City_View_2020 as
+Select * from
+(Select rest_city,
+        sum(s.quantity) Total_Qty,
+        sum(s.line_total) Total_Sales,
+	sum(s.actual_amount_paid) Total_Actual_Sales_Discount
+ From sales_fact s, dim_restaurants r, dim_date d
+ Where s.restaurant_key = r.restaurant_key 
+       AND d.date_key = s.date_key 
+       AND extract(year from order_date) = 2020
+ Group by rest_city
+ Order by 4 DESC)
+Where rownum<=10;
+
+column Percentage_vs_TopCity format 990.00
+
+TTITLE CENTER  'VS Top City Sales with Top 10 City in Percentage'SKIP 1 -
+CENTER ===================================================== SKIP 1
+Select A.rest_city,
+       A.Total_Qty,
+       A.Total_Sales,
+       A.Total_Actual_Sales_Discount,
+       ROUND(A.Total_Actual_Sales_Discount/B.Top_Actual_Sales*100,2) Percentage_vs_TopCity
+from Top10_City_View_2020 A, Top_City_View_2020 B;
+

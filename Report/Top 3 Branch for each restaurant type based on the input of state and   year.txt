@@ -1,0 +1,46 @@
+set linesize 90
+set pagesize 120
+break on rest_typename skip 1 duplicates
+
+TTITLE CENTER  'TOP 3 For Each Restaurant Branch Based on Input Year and State'SKIP 1 -
+CENTER ======================================================================== SKIP 1
+column TotalSales format 9999999.99
+column AveragePerOrder format 9999999.99
+column ranks format 99
+column rest_name format a25
+column rest_branchid format 99999
+column TotalQty format 99999
+column Total_Order format 9999
+column rest_typename format a10
+column AveragePerOrder HEADING 'Average|  Per  |Order '
+column TotalQty HEADING 'Total|QTY'
+column Total_Order HEADING 'Total|Order'
+column rest_branchid HEADING 'Branch|ID'
+column rest_typename HEADING 'Resturant|Type'
+
+SELECT rest_typename,
+       rest_name,
+       rest_branchid, 
+       Total_Order,
+       TotalQty,
+       Total_Sales,ranks,  
+       AveragePerOrder
+FROM 
+  ( SELECT rest_typename, 
+           rest_name, rest_branchid,
+           sum(quantity) as TotalQTY, 
+           sum(line_total) as Total_Sales,
+           count(distinct orderid) as Total_Order,
+           ROW_NUMBER() OVER (PARTITION BY rest_typename
+                              ORDER BY sum(s.line_total) 
+                              DESC)AS RANKS, 
+           ROUND(sum(line_total)/count(distinct orderid),2) 
+           AS AveragePerOrder
+    FROM sales_fact S, dim_restaurants R
+    Where s.restaurant_key = r.restaurant_key 
+          AND extract(year from s.order_date) = &year_input 
+          AND rest_state = UPPER('&state_input')
+    Group by r.rest_typename,R.rest_branchid,rest_name
+  ) 
+WHERE RANKS <= 3
+ORDER BY rest_typename,Total_Sales DESC; 
